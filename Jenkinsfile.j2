@@ -1,18 +1,23 @@
 node {
     stage('Git clone') {
         git url: 'git@gitlab.rebrainme.com:icetony/do13.git',
-            credentialsId: 'gitlabRebrainSSHKey'
+                credentialsId: 'gitlabRebrainSSHKey'
     }
-    
+
     env.GIT_TAG_NAME = gitTagName()
     env.REMOTE_SSH_USER = "root"
     env.REMOTE_HOST = "icetony2.devops.rebrain.srwx.net"
 
     stage('Deploy') {
-        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} mkdir -p /var/www/hello-${GIT_TAG_NAME}/'
-        sh 'scp index.html ${REMOTE_SSH_USER}@${REMOTE_HOST}:/var/www/hello-${GIT_TAG_NAME}/'
-        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} chown -R www-data:www-data /var/www/hello-${GIT_TAG_NAME}/'
-        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} ln -fns /var/www/hello-${GIT_TAG_NAME}/ /var/www/current'
+        if (isChanged()) {
+            echo "Changes found - running the stage"
+            sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} mkdir -p /var/www/hello-${GIT_TAG_NAME}/'
+            sh 'scp index.html ${REMOTE_SSH_USER}@${REMOTE_HOST}:/var/www/hello-${GIT_TAG_NAME}/'
+            sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} chown -R www-data:www-data /var/www/hello-${GIT_TAG_NAME}/'
+            sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} ln -fns /var/www/hello-${GIT_TAG_NAME}/ /var/www/current'
+        } else {
+            echo "No changes - skipping the stage"
+        }
     }
 }
 
@@ -30,6 +35,15 @@ String gitTagName() {
 
 String getCommit() {
     return sh(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
+}
+
+boolean isChanged() {
+    local = sh(script: "md5sum index.html | cut -d ' ' -f 1", returnStdout: true)?.trim()
+    remote = sh(script: "ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} md5sum /var/www/current/index.html | cut -d ' ' -f 1", returnStdout: true)?.trim()
+    if (local != remote) {
+        return true
+    }
+    return false
 }
 
 @NonCPS
