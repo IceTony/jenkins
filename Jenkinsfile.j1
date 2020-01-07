@@ -1,0 +1,16 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Git') {
+            steps {
+                git url: 'git@gitlab.rebrainme.com:icetony/do12.git',
+                    credentialsId: 'gitlabRebrainSSHKey'
+                sh 'git tag -a v0.1 -m "version 0.1"'
+                sh 'git checkout -b v0.2-rc1'
+                sh 'git push origin --tags'
+                sh 'git push origin --all'
+            }
+        }
+    }
+}
