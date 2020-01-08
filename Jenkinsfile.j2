@@ -1,7 +1,7 @@
 node {
     stage('Git clone') {
         git url: 'git@gitlab.rebrainme.com:icetony/do13.git',
-                credentialsId: 'gitlabRebrainSSHKey'
+            credentialsId: 'gitlabRebrainSSHKey'
     }
 
     env.GIT_TAG_NAME = gitTagName()
