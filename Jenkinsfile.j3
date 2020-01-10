@@ -1,0 +1,26 @@
+node (label: 'slave1') {
+    env.REMOTE_SSH_USER = "root"
+    env.REMOTE_HOST = "icetony2.devops.rebrain.srwx.net"
+
+    stage('Git clone') {
+        git url: 'git@gitlab.rebrainme.com:icetony/j3.git',
+            credentialsId: 'gitlabRebrainSSHKey'
+    }
+
+    stage('Build') {
+        sh 'rm -rf build/'
+        sh 'npm install'
+        sh 'npm run build'
+    }
+
+    stage('Archive artifacts') {
+        archiveArtifacts artifacts: 'build/**/*.*', onlyIfSuccessful: true
+    }
+
+    stage('Deploy') {
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} mkdir -p /var/www/nodejs-${BUILD_NUMBER}/'
+        sh 'scp -r build/* ${REMOTE_SSH_USER}@${REMOTE_HOST}:/var/www/nodejs-${BUILD_NUMBER}/'
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} chown -R www-data:www-data /var/www/nodejs-${BUILD_NUMBER}/'
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} ln -fns /var/www/nodejs-${BUILD_NUMBER}/ /var/www/current'
+    }
+}
