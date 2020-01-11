@@ -1,0 +1,17 @@
+node {
+    env.REMOTE_SSH_USER = "root"
+    env.REMOTE_HOST = "icetony2.devops.rebrain.srwx.net"
+
+    stage('Git clone') {
+        git url: 'git@gitlab.rebrainme.com:icetony/do15.git',
+            credentialsId: 'gitlabRebrainSSHKey'
+    }
+
+    stage('Deploy') {
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} mkdir -p /var/www/symfony-${BUILD_NUMBER}/'
+        sh 'rsync -avzP . ${REMOTE_SSH_USER}@${REMOTE_HOST}:/var/www/symfony-${BUILD_NUMBER}/'
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} "cd /var/www/symfony-${BUILD_NUMBER} && composer install"'
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} chown -R www-data:www-data /var/www/symfony-${BUILD_NUMBER}/'
+        sh 'ssh ${REMOTE_SSH_USER}@${REMOTE_HOST} ln -fns /var/www/symfony-${BUILD_NUMBER}/ /var/www/symfony-current'
+    }
+}
