@@ -40,8 +40,8 @@ pipeline {
         stage('Git clone') {
             steps {
                 git branch: 'master',
-                        url: 'git@gitlab.rebrainme.com:icetony/do16.git',
-                        credentialsId: 'gitlabRebrainSSHKey'
+                    url: 'git@gitlab.rebrainme.com:icetony/do16.git',
+                    credentialsId: 'gitlabRebrainSSHKey'
             }
         }
 
