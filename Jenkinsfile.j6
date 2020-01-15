@@ -1,0 +1,65 @@
+@Library('my-shared-library') _
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'DEPLOY_HOST',
+            choices: ['icetony2.devops.rebrain.srwx.net', 'do16.prod.devops.rebrain.srwx.net'],
+            description: ''
+        )
+        gitParameter branchFilter: 'origin/(.*)', defaultValue: 'master', name: 'BRANCH', type: 'PT_BRANCH', description: 'Git branch selection'
+    }
+
+    environment {
+        REMOTE_SSH_USER = "root"
+    }
+
+    options {
+        gitLabConnection('gitlabRebrainApiToken')
+        gitlabBuilds(builds: ['jenkins'])
+    }
+
+    triggers {
+        gitlab(
+                triggerOnPush: true,
+                branchFilterType: 'All',
+                secretToken: '37ead9d8869589f096e843386cd5d5a8'
+        )
+    }
+
+    post {
+        failure {
+            updateGitlabCommitStatus name: 'jenkins', state: 'failed'
+        }
+        success {
+            updateGitlabCommitStatus name: 'jenkins', state: 'success'
+        }
+    }
+
+    stages {
+        stage('Git clone') {
+            steps {
+                git branch: 'master',
+                    url: 'git@gitlab.rebrainme.com:icetony/do16.git',
+                    credentialsId: 'gitlabRebrainSSHKey'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                npmBuild
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'ssh $REMOTE_SSH_USER@$DEPLOY_HOST mkdir -p /var/www/nodejs-$BUILD_NUMBER/'
+                sh 'scp -r build/* $REMOTE_SSH_USER@$DEPLOY_HOST:/var/www/nodejs-$BUILD_NUMBER/'
+                sh 'ssh $REMOTE_SSH_USER@$DEPLOY_HOST chown -R www-data:www-data /var/www/nodejs-$BUILD_NUMBER/'
+                sh 'ssh $REMOTE_SSH_USER@$DEPLOY_HOST ln -fns /var/www/nodejs-$BUILD_NUMBER/ /var/www/current'
+            }
+        }
+    }
+}
