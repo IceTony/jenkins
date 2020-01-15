@@ -5,9 +5,9 @@ pipeline {
 
     parameters {
         choice(
-            name: 'DEPLOY_HOST',
-            choices: ['icetony2.devops.rebrain.srwx.net', 'do16.prod.devops.rebrain.srwx.net'],
-            description: ''
+                name: 'DEPLOY_HOST',
+                choices: ['icetony2.devops.rebrain.srwx.net', 'do17.prod.devops.rebrain.srwx.net'],
+                description: ''
         )
         gitParameter branchFilter: 'origin/(.*)', defaultValue: 'master', name: 'BRANCH', type: 'PT_BRANCH', description: 'Git branch selection'
     }
@@ -18,7 +18,6 @@ pipeline {
 
     options {
         gitLabConnection('gitlabRebrainApiToken')
-        gitlabBuilds(builds: ['jenkins'])
     }
 
     triggers {
@@ -29,27 +28,18 @@ pipeline {
         )
     }
 
-    post {
-        failure {
-            updateGitlabCommitStatus name: 'jenkins', state: 'failed'
-        }
-        success {
-            updateGitlabCommitStatus name: 'jenkins', state: 'success'
-        }
-    }
-
     stages {
         stage('Git clone') {
             steps {
                 git branch: 'master',
-                    url: 'git@gitlab.rebrainme.com:icetony/do16.git',
+                    url: 'git@gitlab.rebrainme.com:icetony/do17.git',
                     credentialsId: 'gitlabRebrainSSHKey'
             }
         }
 
         stage('Build') {
             steps {
-                npmBuild
+                npmBuild()
             }
         }
 
