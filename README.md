@@ -2,7 +2,7 @@
 ## Установка Jenkins на Ubuntu
 1. Установить java
 ```
-sudo apt install openjdk11-jdk
+sudo apt install openjdk-11-jdk
 ```
 2. Добавить ключ и репозиторий
 ```
